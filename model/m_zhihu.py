@@ -14,6 +14,19 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+class ZhihuQuestion(BaseModel):
+    """
+    知乎问题
+    """
+    question_id: str = Field(default="", description="问题ID")
+    question_link: str = Field(default="", description="问题链接")
+    question_type: str = Field(default="", description="问题类型")
+    title: str = Field(default="", description="问题标题")
+    created_time: int = Field(default=0, description="创建时间")
+    updated_time: int = Field(default=0, description="更新时间")
+    answer_count: int = Field(default=0, description="回答数量")
+    comment_count: int = Field(default=0, description="评论数量")
+    follower_count: int = Field(default=0, description="关注人数")
 
 class ZhihuContent(BaseModel):
     """

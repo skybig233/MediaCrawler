@@ -23,7 +23,7 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 import config
 from base.base_crawler import AbstractApiClient
 from constant import zhihu as zhihu_constant
-from model.m_zhihu import ZhihuComment, ZhihuContent, ZhihuCreator
+from model.m_zhihu import ZhihuComment, ZhihuContent, ZhihuCreator, ZhihuQuestion
 from tools import utils
 
 from .exception import DataFetchError, ForbiddenError
@@ -351,6 +351,39 @@ class ZhiHuClient(AbstractApiClient):
         html_content: str = await self.get(uri, return_response=True)
         return self._extractor.extract_creator(url_token, html_content)
 
+    async def get_question_info(self, question_id: str) -> Optional[ZhihuContent]:
+        """
+        获取问题信息
+        Args:
+            question_id:
+
+        Returns:
+
+        """
+        uri = f"/question/{question_id}"
+        html_content = await self.get(uri, return_response=True)
+        return self._extractor.extract_question(question_id,html_content)
+
+    async def get_question_answers(self, question_id: str, offset: int = 0, limit: int = 3) -> Dict:
+        """
+        获取问题的回答
+        Args:
+            question_id:
+            offset:
+            limit:
+
+        Returns:
+
+        """
+        uri = f"/api/v4/questions/{question_id}/answers"
+        params = {
+            "include":"data[*].is_normal,admin_closed_comment,reward_info,is_collapsed,annotation_action,annotation_detail,collapse_reason,is_sticky,collapsed_by,suggest_edit,comment_count,can_comment,content,editable_content,attachment,voteup_count,reshipment_settings,comment_permission,created_time,updated_time,review_info,relevant_info,question,excerpt,is_labeled,paid_info,paid_info_content,reaction_instruction,relationship.is_authorized,is_author,voting,is_thanked,is_nothelp;data[*].author.follower_count,vip_info,kvip_info,badge[*].topics;data[*].settings.table_of_content.enabled",
+            "offset": offset,
+            "limit": limit,
+            "order_by": "default"
+        }
+        return await self.get(uri, params)
+
     async def get_creator_answers(self, url_token: str, offset: int = 0, limit: int = 20) -> Dict:
         """
         获取创作者的回答
@@ -411,6 +444,37 @@ class ZhiHuClient(AbstractApiClient):
             "similar_aggregation": "true"
         }
         return await self.get(uri, params)
+
+    async def get_all_anwser_by_question(self, question: ZhihuQuestion, crawl_interval: float = 1.0,
+                             callback: Optional[Callable] = None) -> List[ZhihuContent]:
+        """
+        获取问题的所有回答
+        Args:
+            question_id: 问题ID
+            crawl_interval: 爬取一次笔记的延迟单位（秒）
+            callback: 一次笔记爬取结束后
+
+        Returns:
+
+        """
+        all_contents: List[ZhihuContent] = []
+        is_end: bool = False
+        offset: int = 0
+        limit: int = 3
+        while not is_end:
+            res = await self.get_question_answers(question.question_id, offset, limit)
+            if not res:
+                break
+            utils.logger.info(f"[ZhiHuClient.get_all_anwser_by_question] Get question {question.question_link} answers: {res}")
+            paging_info = res.get("paging", {})
+            is_end = paging_info.get("is_end")
+            contents = self._extractor.extract_content_list_from_creator(res.get("data"))
+            if callback:
+                await callback(contents)
+            all_contents.extend(contents)
+            offset += limit
+            await asyncio.sleep(crawl_interval)
+        return all_contents
 
     async def get_all_anwser_by_creator(self, creator: ZhihuCreator, crawl_interval: float = 1.0,
                                         callback: Optional[Callable] = None) -> List[ZhihuContent]:

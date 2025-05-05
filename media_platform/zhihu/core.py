@@ -22,7 +22,7 @@ from playwright.async_api import (BrowserContext, BrowserType, Page,
 import config
 from constant import zhihu as constant
 from base.base_crawler import AbstractCrawler
-from model.m_zhihu import ZhihuContent, ZhihuCreator
+from model.m_zhihu import ZhihuContent, ZhihuCreator, ZhihuQuestion
 from proxy.proxy_ip_pool import IpInfoModel, create_ip_pool
 from store import zhihu as zhihu_store
 from tools import utils
@@ -101,6 +101,9 @@ class ZhihuCrawler(AbstractCrawler):
             elif config.CRAWLER_TYPE == "creator":
                 # Get creator's information and their notes and comments
                 await self.get_creators_and_notes()
+            elif config.CRAWLER_TYPE == "question":
+                # Get question and answers
+                await self.get_questions_and_answers()
             else:
                 pass
 
@@ -227,6 +230,37 @@ class ZhihuCrawler(AbstractCrawler):
             # Get all comments of the creator's contents
             await self.batch_get_content_comments(all_content_list)
 
+    async def get_questions_and_answers(self) -> None:
+        """
+        Get creator's information and their notes and comments
+        Returns:
+
+        """
+        utils.logger.info("[ZhihuCrawler.get_questions_and_answers] Begin get xiaohongshu questions")
+        for question_link in config.ZHIHU_SPECIFIED_ID_LIST:
+            utils.logger.info(f"[ZhihuCrawler.get_questions_and_answers] Begin get question {question_link}")
+            question_url_token = question_link.split("/")[-1]
+            # get question detail info from web html content
+            question_info: ZhihuQuestion = await self.zhihu_client.get_question_info(question_id=question_url_token)
+            if not question_info:
+                utils.logger.info(f"[ZhihuCrawler.get_questions_and_answers] Question {question_url_token} not found")
+                continue
+
+            utils.logger.info(f"[ZhihuCrawler.get_questions_and_answers] Creator info: {question_info}")
+            # await zhihu_store.save_creator(creator=question_info)
+
+            # 默认只提取回答信息，如果需要文章和视频，把下面的注释打开即可
+
+            # Get all anwser information of the question
+            all_content_list = await self.zhihu_client.get_all_anwser_by_question(
+                question=question_info,
+                crawl_interval=random.random(),
+                callback=zhihu_store.batch_update_zhihu_contents
+            )
+
+            await self.batch_get_content_comments(all_content_list)
+
+    
     async def get_note_detail(
         self, full_note_url: str, semaphore: asyncio.Semaphore
     ) -> Optional[ZhihuContent]:
@@ -252,6 +286,13 @@ class ZhihuCrawler(AbstractCrawler):
                     f"[ZhihuCrawler.get_specified_notes] Get answer info, question_id: {question_id}, answer_id: {answer_id}"
                 )
                 return await self.zhihu_client.get_answer_info(question_id, answer_id)
+            
+            elif note_type ==constant.QUESTION_NAME:
+                question_id = full_note_url.split("/")[-1]
+                utils.logger.info(
+                    f"[ZhihuCrawler.get_specified_notes] Get question info, question_id: {question_id}"
+                )
+                return await self.zhihu_client.get_question_info(question_id)
 
             elif note_type == constant.ARTICLE_NAME:
                 article_id = full_note_url.split("/")[-1]

@@ -18,7 +18,7 @@ import execjs
 from parsel import Selector
 
 from constant import zhihu as zhihu_constant
-from model.m_zhihu import ZhihuComment, ZhihuContent, ZhihuCreator
+from model.m_zhihu import ZhihuComment, ZhihuContent, ZhihuCreator, ZhihuQuestion
 from tools.crawler_util import extract_text_from_html
 
 ZHIHU_SGIN_JS = None
@@ -359,6 +359,44 @@ class ZhihuExtractor:
         res.get_voteup_count = creator_info.get("voteupCount")
         return res
 
+    def extract_question(self, question_id: str, html_content: str) -> Optional[ZhihuQuestion]:
+        """
+        extract zhihu question content
+        Args:
+            question_id:
+            html_content:
+
+        Returns:
+
+        """
+        if not html_content:
+            return None
+
+        js_init_data = Selector(text=html_content).xpath("//script[@id='js-initialData']/text()").get(default="").strip()
+        if not js_init_data:
+            return None
+
+        js_init_data_dict: Dict = json.loads(js_init_data)
+        questions_info: Dict = js_init_data_dict.get("initialState", {}).get("entities", {}).get("questions", {})
+        if not questions_info:
+            return None
+        
+        question_info: Dict = questions_info.get(question_id)
+        if not question_info:
+            return None
+        
+        res = ZhihuQuestion()
+        res.question_id = question_info.get('id')
+        res.question_link = f"{zhihu_constant.ZHIHU_URL}/question/{res.question_id}"
+        res.question_type = question_info.get('questionType')
+        res.title = question_info.get("title")
+        res.answer_count = question_info.get("answerCount")
+        res.comment_count = question_info.get("commentCount")
+        res.follower_count = question_info.get("followerCount")
+        res.created_time = question_info.get("created")
+        res.updated_time = question_info.get("updatedTime")
+        return res
+
 
     def extract_content_list_from_creator(self, anwser_list: List[Dict]) -> List[ZhihuContent]:
         """
@@ -373,9 +411,6 @@ class ZhihuExtractor:
             return []
 
         return self._extract_content_list(anwser_list)
-
-
-
 
     def extract_answer_content_from_html(self, html_content: str) -> Optional[ZhihuContent]:
         """
@@ -395,6 +430,25 @@ class ZhihuExtractor:
             return None
 
         return self._extract_answer_content(answer_info.get(list(answer_info.keys())[0]))
+    
+    def extract_question_content_from_html(self, html_content: str) -> Optional[ZhihuContent]:
+        """
+        extract zhihu question content from html
+        Args:
+            html_content:
+
+        Returns:
+
+        """
+        js_init_data: str = Selector(text=html_content).xpath("//script[@id='js-initialData']/text()").get(default="")
+        if not js_init_data:
+            return None
+        json_data: Dict = json.loads(js_init_data)
+        question_info: Dict = json_data.get("initialState", {}).get("entities", {}).get("questions", {})
+        if not question_info:
+            return None
+
+        return self._extract_answer_content(question_info.get(list(question_info.keys())[0]))
 
     def extract_article_content_from_html(self, html_content: str) -> Optional[ZhihuContent]:
         """

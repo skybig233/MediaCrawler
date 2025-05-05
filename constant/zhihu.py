@@ -16,4 +16,4 @@ ZHIHU_ZHUANLAN_URL = "https://zhuanlan.zhihu.com"
 ANSWER_NAME = "answer"
 ARTICLE_NAME = "article"
 VIDEO_NAME = "zvideo"
-
+QUESTION_NAME = "question"

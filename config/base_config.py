@@ -10,16 +10,18 @@
 
 
 # 基础配置
-PLATFORM = "xhs"
-KEYWORDS = "编程副业,编程兼职"  # 关键词搜索配置，以英文逗号分隔
-LOGIN_TYPE = "qrcode"  # qrcode or phone or cookie
+PLATFORM = "zhihu"
+KEYWORDS = "男生如何在知乎上找到男朋友"  # 关键词搜索配置，以英文逗号分隔
+LOGIN_TYPE = "cookie"  # qrcode or phone or cookie
 COOKIES = ""
 # 具体值参见media_platform.xxx.field下的枚举值，暂时只支持小红书
 SORT_TYPE = "popularity_descending"
 # 具体值参见media_platform.xxx.field下的枚举值，暂时只支持抖音
 PUBLISH_TIME_TYPE = 0
 CRAWLER_TYPE = (
-    "search"  # 爬取类型，search(关键词搜索) | detail(帖子详情)| creator(创作者主页数据)
+    # "creator"  # 爬取类型，search(关键词搜索) | detail(帖子详情)| creator(创作者主页数据)
+    # "detail"
+    "question"  # 爬取类型，search(关键词搜索) | detail(帖子详情)| creator(创作者主页数据) | question(问题)
 )
 # 自定义User Agent（暂时仅对XHS有效）
 UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0'
@@ -55,7 +57,7 @@ USER_DATA_DIR = "%s_user_data_dir"  # %s will be replaced by platform name
 START_PAGE = 1
 
 # 爬取视频/帖子的数量控制
-CRAWLER_MAX_NOTES_COUNT = 200
+CRAWLER_MAX_NOTES_COUNT = 10
 
 # 并发爬虫数量控制
 MAX_CONCURRENCY_NUM = 1
@@ -64,7 +66,7 @@ MAX_CONCURRENCY_NUM = 1
 ENABLE_GET_IMAGES = False
 
 # 是否开启爬评论模式, 默认开启爬评论
-ENABLE_GET_COMMENTS = True
+ENABLE_GET_COMMENTS = False
 
 # 爬取一级评论的数量控制(单视频/帖子)
 CRAWLER_MAX_COMMENTS_COUNT_SINGLENOTES = 10
@@ -163,9 +165,12 @@ ZHIHU_CREATOR_URL_LIST = [
 
 # 指定知乎需要爬取的帖子ID列表
 ZHIHU_SPECIFIED_ID_LIST = [
-    "https://www.zhihu.com/question/826896610/answer/4885821440", # 回答
-    "https://zhuanlan.zhihu.com/p/673461588", # 文章
-    "https://www.zhihu.com/zvideo/1539542068422144000" # 视频
+    # "https://www.zhihu.com/question/826896610/answer/4885821440", # 回答
+    # "https://zhuanlan.zhihu.com/p/673461588", # 文章
+    # "https://www.zhihu.com/zvideo/1539542068422144000" # 视频
+    "https://www.zhihu.com/question/264508629",  # 问题
+    # "https://www.zhihu.com/question/264508629/answer/87843898219"
+
 ]
 
 # 词云相关
